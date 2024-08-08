@@ -66,7 +66,7 @@ public class TestUtils extends Mod{
         loadSettings();
         Setup.init();
 
-        LoadedMod tu = mods.locateMod("test-utils");
+        LoadedMod tu = mods.locateMod("test-utils-u");
 
         Func<String, String> getModBundle = value -> bundle.get("mod." + value);
 
@@ -175,10 +175,8 @@ public class TestUtils extends Mod{
             t.checkPref("tu-music-enabled", false);
             t.checkPref("tu-allow-filters", false);
 
-            if(OS.username.startsWith("MEEP")){
-                t.pref(new Separator(8));
-                t.checkPref("tu-mobile-test", false);
-            }
+            t.pref(new Separator(8));
+            t.checkPref("tu-mobile-test", false);
         });
 
         if(mobile) ui.settings.game.checkPref("console", true);
