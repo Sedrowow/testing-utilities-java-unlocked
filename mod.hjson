@@ -5,7 +5,7 @@ displayName: "Testing Utilities Unlocked"
 name: "test-utils-u"
 
 #your name
-author: "MEEP of Faith"
+author: "Sedrowow"
 
 #the fully qualified main class of the mod
 main: "testing.TestUtils"
@@ -14,7 +14,7 @@ main: "testing.TestUtils"
 repo: Sedrowow/testing-utilities-java-unlocked
 
 #the mod description as seen in the mod dialog
-description: "Utilities for testing stuff in sandbox. (Load the game with this mod enabled for more info.)"
+description: "Utilities for testing stuff in sandbox and career. (Load the game with this mod enabled for more info. (And thanks Meep of Faith for auch awesome mod!)"
 
 #short description displayed under the title
 subtitle: "Easier to use than the console."
