@@ -31,17 +31,17 @@ public class TUStyles{
         teamChanger;
 
     public static void init(){
-        buttonLeft = atlas.getDrawable("test-utils-button-left");
-        buttonLeftDown = atlas.getDrawable("test-utils-button-left-down");
-        buttonLeftOver = atlas.getDrawable("test-utils-button-left-over");
-        buttonCenter = atlas.getDrawable("test-utils-button-center");
-        buttonCenterDown = atlas.getDrawable("test-utils-button-center-down");
-        buttonCenterOver = atlas.getDrawable("test-utils-button-center-over");
-        buttonCenterDisabled = atlas.getDrawable("test-utils-button-center-disabled");
-        buttonRight = atlas.getDrawable("test-utils-button-right");
-        buttonRightDown = atlas.getDrawable("test-utils-button-right-down");
-        buttonRightOver = atlas.getDrawable("test-utils-button-right-over");
-        paneBottom = atlas.getDrawable("test-utils-pane-bottom");
+        buttonLeft = atlas.getDrawable("test-utils-u-button-left");
+        buttonLeftDown = atlas.getDrawable("test-utils-u-button-left-down");
+        buttonLeftOver = atlas.getDrawable("test-utils-u-button-left-over");
+        buttonCenter = atlas.getDrawable("test-utils-u-button-center");
+        buttonCenterDown = atlas.getDrawable("test-utils-u-button-center-down");
+        buttonCenterOver = atlas.getDrawable("test-utils-u-button-center-over");
+        buttonCenterDisabled = atlas.getDrawable("test-utils-u-button-center-disabled");
+        buttonRight = atlas.getDrawable("test-utils-u-button-right");
+        buttonRightDown = atlas.getDrawable("test-utils-u-button-right-down");
+        buttonRightOver = atlas.getDrawable("test-utils-u-button-right-over");
+        paneBottom = atlas.getDrawable("test-utils-u-pane-bottom");
 
         right = new ButtonStyle(Styles.defaultb){{
             up = buttonRight;
