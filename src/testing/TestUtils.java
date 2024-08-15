@@ -190,8 +190,8 @@ public class TestUtils extends Mod{
         return !mobile && !disableTeleport() && !player.unit().type.internal && input.alt();
     }
 
-    public static boolean disableCampaign(){
-        return state.isCampaign() && !(settings.getBool("tu-cheating"));
+    public static boolean disableCampaign() {
+    return false;
     }
 
     public static boolean click(){
