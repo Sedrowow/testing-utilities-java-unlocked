@@ -157,8 +157,8 @@ public class TestUtils extends Mod{
     }
 
     void loadSettings(){
-        ui.settings.addCategory(bundle.get("setting.tu-title"), "test-utils-settings-icon", t -> {
-            t.pref(new Banner("test-utils-settings-banner", -1));
+        ui.settings.addCategory(bundle.get("setting.tu-title"), "test-utils-u-settings-icon", t -> {
+            t.pref(new Banner("test-utils-u-settings-banner", -1));
             t.checkPref("tu-instakill", true);
             t.checkPref("tu-despawns", true);
             t.checkPref("tu-permanent", false);
