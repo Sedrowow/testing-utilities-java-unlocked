@@ -1,8 +1,8 @@
 #the mod name as displayed in-game
-displayName: "Testing Utilities"
+displayName: "Testing Utilities Unlocked"
 
 #the internal name of your mod
-name: "test-utils"
+name: "test-utils-u"
 
 #your name
 author: "MEEP of Faith"
@@ -11,13 +11,13 @@ author: "MEEP of Faith"
 main: "testing.TestUtils"
 
 #mod repo on github
-repo: MEEPofFaith/testing-utilities-java
+repo: Sedrowow/testing-utilities-java-unlocked
 
 #the mod description as seen in the mod dialog
-description: "Utilities for testing stuff in sandbox. (Load the game with this mod enabled for more info.)"
+description: "Utilities for testing stuff in sandbox and career. (Load the game with this mod enabled for more info.)"
 
 #short description displayed under the title
-subtitle: "Easier to use than the console."
+subtitle: "Easier to use than the console and more cheaty."
 
 version: 68.6
 
