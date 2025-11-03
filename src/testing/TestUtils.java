@@ -155,7 +155,7 @@ public class TestUtils extends Mod{
     }
 
     public static boolean disableCampaign(){
-        return state.isCampaign() && !(settings.getBool("tu-cheating"));
+        return state.isCampaign() && (settings.getBool("tu-cheating"));
     }
 
     public static boolean click(){
