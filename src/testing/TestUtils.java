@@ -54,7 +54,7 @@ public class TestUtils extends Mod{
         TUSettings.init();
         Setup.init();
 
-        LoadedMod tu = mods.locateMod("test-utils");
+        LoadedMod tu = mods.locateMod("test-utils-u");
 
         Func<String, String> getModBundle = value -> bundle.get("mod." + value);
 
