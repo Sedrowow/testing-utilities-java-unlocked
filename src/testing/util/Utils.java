@@ -11,7 +11,7 @@ import static mindustry.Vars.*;
 
 public class Utils{
     public static void spawnIconEffect(String sprite){
-        TUFx.iconEffect.at(player.x, player.y, 0, "test-utils-" + sprite);
+        TUFx.iconEffect.at(player.x, player.y, 0, "test-utils-u-" + sprite);
     }
 
     public static String round(float f){
