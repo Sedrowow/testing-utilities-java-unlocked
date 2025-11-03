@@ -2,7 +2,6 @@ package testing.editor;
 
 import arc.struct.*;
 import mindustry.editor.*;
-import mindustry.editor.DrawOperation.*;
 import mindustry.game.*;
 import mindustry.world.*;
 import mindustry.world.blocks.environment.*;
@@ -12,10 +11,27 @@ import static testing.util.TUVars.*;
 
 /** Based on {@link DrawOperation} */
 public class PaintOperation{
+    static final byte
+        opFloor = 0,
+        opBlock = 1,
+        opRotation = 2,
+        opTeam = 3,
+        opOverlay = 4,
+        opData = 5,
+        opExtraData = 6;
+
     private final LongSeq array = new LongSeq();
 
     public boolean isEmpty(){
         return array.isEmpty();
+    }
+
+    public int size(){
+        return array.size;
+    }
+
+    public void remove(int amount){
+        array.setSize(Math.max(0, array.size - amount));
     }
 
     public void addOperation(long op){
@@ -35,54 +51,70 @@ public class PaintOperation{
     }
 
     private void updateTile(int i){
-        long l = array.get(i);
-        Tile tile = painter.tile(PaintOp.x(l), PaintOp.y(l));
-        array.set(i, PaintOp.get(PaintOp.x(l), PaintOp.y(l), PaintOp.type(l), getTile(tile, PaintOp.type(l)), tile.data));
-        setTile(painter.tile(PaintOp.x(l), PaintOp.y(l)), PaintOp.type(l), PaintOp.value(l), PaintOp.data(l));
+        long op = array.get(i);
+        Tile tile = painter.tile(PaintOp.x(op), PaintOp.y(op));
+        array.set(i, PaintOp.get(tile.x, tile.y, PaintOp.type(op), getTile(tile, PaintOp.type(op))));
+        setTile(tile, PaintOp.type(op), PaintOp.value(op));
     }
 
-    private short getTile(Tile tile, byte type){
-        if(type == OpType.floor.ordinal()){
-            return tile.floorID();
-        }else if(type == OpType.block.ordinal()){
-            return tile.blockID();
-        }else if(type == OpType.rotation.ordinal()){
-            return tile.build == null ? 0 : (byte)tile.build.rotation;
-        }else if(type == OpType.team.ordinal()){
-            return (byte)tile.getTeamID();
-        }else if(type == OpType.overlay.ordinal()){
-            return tile.overlayID();
-        }
-        throw new IllegalArgumentException("Invalid type.");
+    private int getTile(Tile tile, byte type){
+        return switch(type){
+            case opFloor -> tile.floorID();
+            case opOverlay -> tile.overlayID();
+            case opBlock -> tile.blockID();
+            case opRotation -> tile.build == null ? 0 : (byte)tile.build.rotation;
+            case opTeam -> (byte)tile.getTeamID();
+            case opData -> PaintOpData.get(tile.data, tile.floorData, tile.overlayData);
+            case opExtraData -> tile.extraData;
+            default -> throw new IllegalArgumentException("Invalid type: " + type);
+        };
     }
 
-    private void setTile(Tile tile, byte type, short to, byte data){
+    private void setTile(Tile tile, byte type, int to){
         painter.load(() -> {
-            if(type == OpType.floor.ordinal()){
-                if(content.block(to) instanceof Floor floor){
-                    tile.setFloor(floor);
-                }
-            }else if(type == OpType.block.ordinal()){
-                Block block = content.block(to);
-
-                if(block instanceof Cliff){
-                    if(data == 0){
-                        painter.pendingCliffs.add(tile); //Pending cliff was added
-                    }else{
-                        painter.pendingCliffs.remove(tile); //Preexisting cliff was added
+            switch(type){
+                case opFloor -> {
+                    if(content.block(to) instanceof Floor floor){
+                        tile.setFloor(floor);
                     }
-                }else if(tile.block() instanceof Cliff){
-                    if(tile.data == 0) painter.pendingCliffs.remove(tile); //Pending cliff was removed
                 }
+                case opOverlay -> {
+                    if(content.block(to) instanceof Floor floor){
+                        tile.setOverlay(floor);
+                    }
+                }
+                case opBlock -> {
+                    Block block = content.block(to);
 
-                tile.setBlock(block, tile.team(), tile.build == null ? 0 : tile.build.rotation);
-                tile.data = data;
-            }else if(type == OpType.rotation.ordinal()){
-                if(tile.build != null) tile.build.rotation = to;
-            }else if(type == OpType.team.ordinal()){
-                tile.setTeam(Team.get(to));
-            }else if(type == OpType.overlay.ordinal()){
-                tile.setOverlayID(to);
+                    if(block instanceof Cliff){
+                        painter.pendingCliffs.add(tile); //Pending cliff was added
+                    }else if(tile.block() instanceof Cliff && tile.data == 0){
+                        painter.pendingCliffs.remove(tile); //Pending cliff was removed
+                    }
+
+                    tile.setBlock(block, tile.team(), tile.build == null ? 0 : tile.build.rotation);
+                    if(tile.build != null){
+                        tile.build.enabled = true;
+                    }
+                }
+                case opRotation -> {
+                    if(tile.build != null) tile.build.rotation = to;
+                }
+                case opTeam -> tile.setTeam(Team.get(to));
+                case opData -> {
+                    tile.data = PaintOpData.data(to);
+                    tile.floorData = PaintOpData.floor(to);
+                    tile.overlayData = PaintOpData.overlay(to);
+
+                    tile.recache();
+                    tile.recacheWall();
+                }
+                case opExtraData -> {
+                    tile.extraData = to;
+
+                    tile.recache();
+                    tile.recacheWall();
+                }
             }
         });
     }

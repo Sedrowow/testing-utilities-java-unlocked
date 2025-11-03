@@ -6,7 +6,6 @@ import arc.math.*;
 import arc.math.geom.*;
 import arc.struct.*;
 import mindustry.content.*;
-import mindustry.editor.DrawOperation.*;
 import mindustry.editor.*;
 import mindustry.game.EventType.*;
 import mindustry.game.*;
@@ -17,7 +16,7 @@ import testing.util.*;
 import static mindustry.Vars.*;
 import static testing.util.TUVars.*;
 
-/** Based on {@link MapEditor}. Made to operate in a live map instead of the editor. */
+/** Based on {@link MapEditor}. Made to operate in a live map instead of the map editor. */
 public class TerrainPainter{
     private final PaintOperationStack stack = new PaintOperationStack();
     private PaintOperation currentOp;
@@ -29,6 +28,9 @@ public class TerrainPainter{
     public int rotation;
     public Block drawBlock = Blocks.boulder;
     public Team drawTeam = Team.sharded;
+    public boolean lockData, lockFloor, lockOverlay, lockExtra;
+    public byte dataData, floorData, overlayData;
+    public int extraData;
 
     public boolean isLoading(){
         return loading;
@@ -91,6 +93,15 @@ public class TerrainPainter{
         Setup.terrainFrag.updateMenu();
     }
 
+    public void setData(byte data, byte floor, byte overlay, int extra){
+        dataData = data;
+        floorData = floor;
+        overlayData = overlay;
+        extraData = extra;
+
+        Setup.terrainFrag.updateFields();
+    }
+
     public void drawBlocksReplace(int x, int y){
         drawBlocks(x, y, data -> data.block() != Blocks.air || drawBlock.isFloor());
     }
@@ -113,23 +124,56 @@ public class TerrainPainter{
         }else{
             boolean isFloor = drawBlock.isFloor() && drawBlock != Blocks.air;
 
-            Cons<PaintedTileData> drawer = data -> {
-                if(!tester.get(data)) return;
+            Cons<PaintedTileData> drawer = tile -> {
+                if(!tester.get(tile)) return;
+                boolean changed = false;
+
+                boolean didDataOp = false;
+                int oldData1 = 0, oldData2 = 0;
+
+                if(drawBlock.saveData || tile.shouldSaveData()){
+                    addPaintOp(PaintOp.get(tile.x(), tile.y(), PaintOperation.opData, PaintOpData.get(tile.data(), tile.floorData(), tile.overlayData())));
+                    addPaintOp(PaintOp.get(tile.x(), tile.y(), PaintOperation.opExtraData, tile.extraData()));
+
+                    oldData1 = PaintOpData.get(tile.data(), tile.floorData(), tile.overlayData());
+                    oldData2 = tile.extraData();
+                    didDataOp = true;
+                }
+
+                int preDataOps = ops();
 
                 if(isFloor){
                     if(forceOverlay){
-                        data.setOverlay(drawBlock.asFloor());
+                        tile.setOverlay(drawBlock.asFloor());
+                        changed = true;
                     }else{
-                        if(!(drawBlock.asFloor().wallOre && !data.block().solid)){
-                            data.setFloor(drawBlock.asFloor());
+                        if(!(drawBlock.asFloor().wallOre && !tile.block().solid)){
+                            tile.setFloor(drawBlock.asFloor());
+                            changed = true;
                         }
                     }
-                }else if(!(data.block().isMultiblock() && !drawBlock.isMultiblock())){
-                    if(drawBlock.rotate && data.build() != null && data.build().rotation != rotation){
-                        addPaintOp(PaintOp.get(data.x(), data.y(), (byte)OpType.rotation.ordinal(), (byte)rotation));
+                }else if(!(tile.block().isMultiblock() && !drawBlock.isMultiblock())){
+                    if(drawBlock.rotate && tile.build() != null && tile.build().rotation != rotation){
+                        addPaintOp(PaintOp.get(tile.x(), tile.y(), PaintOperation.opRotation, rotation));
                     }
 
-                    data.setBlock(drawBlock, drawTeam, rotation);
+                    tile.setBlock(drawBlock, drawTeam, rotation);
+                    changed = !drawBlock.synthetic();
+
+                    if(drawBlock.synthetic()){
+                        addPaintOp(PaintOp.get(tile.x(), tile.y(), PaintOperation.opTeam, drawTeam.id));
+                    }
+                }
+
+                if(changed && drawBlock.saveConfig){
+                    drawBlock.placeEnded(tile.tile, null, rotation, drawBlock.lastConfig);
+                    tile.tile.recache();
+                    tile.tile.recacheWall();
+                }
+
+                //data and block did not change, undo the data ops
+                if(didDataOp && ops() == preDataOps && oldData1 == PaintOpData.get(tile.data(), tile.floorData(), tile.overlayData()) && oldData2 == tile.extraData()){
+                    removeLastOps(2);
                 }
             };
 
@@ -141,6 +185,19 @@ public class TerrainPainter{
                 drawCircle(x, y, brushSize, drawer);
             }
         }
+    }
+
+    public void drawData(int x, int y){
+        if(lockFloor && lockOverlay && lockExtra) return; //Nothing happens
+
+        drawCircle(x, y, brushSize, tile -> {
+            tile.setData(
+                lockData ? tile.data() : dataData,
+                lockFloor ? tile.floorData() : floorData,
+                lockOverlay ? tile.overlayData() : overlayData
+            );
+            if(!lockExtra) tile.setExtraData(extraData);
+        });
     }
 
     boolean hasOverlap(int x, int y){
@@ -216,7 +273,9 @@ public class TerrainPainter{
                     rotation |= (1 << i);
                 }
             }
-            addPaintOp(PaintOp.get(tile.x, tile.y, (byte)OpType.block.ordinal(), Blocks.cliff.id, tile.data));
+            addPaintOp(PaintOp.get(tile.x, tile.y, PaintOperation.opBlock, tile.blockID()));
+            addPaintOp(PaintOp.get(tile.x, tile.y, PaintOperation.opData, PaintOpData.get(tile.data, tile.floorData, tile.overlayData)));
+
             tile.data = (byte)rotation;
         }
         for(Tile tile : pendingCliffs){
@@ -273,11 +332,22 @@ public class TerrainPainter{
         currentOp = null;
     }
 
-    public void addPaintOp(long data){
+    public void addPaintOp(long op){
         if(loading) return;
 
         if(currentOp == null) currentOp = new PaintOperation();
-        currentOp.addOperation(data);
+        currentOp.addOperation(op);
+    }
+
+    public int ops(){
+        if(currentOp == null) return 0;
+        return currentOp.size();
+    }
+
+    public void removeLastOps(int amount){
+        if(currentOp == null || loading) return;
+
+        currentOp.remove(amount);
     }
 
     public PaintedTileData data(int x, int y){

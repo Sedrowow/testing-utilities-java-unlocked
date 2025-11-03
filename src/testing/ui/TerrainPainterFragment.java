@@ -40,6 +40,7 @@ public class TerrainPainterFragment{
     private boolean buildings = false;
     private boolean lastIndent = false;
     private boolean indentCliff = false;
+    private TextField dataField, floorField, overlayField, extraField;
 
     public void build(Group parent){
         Boolp visibility = () -> show && !ui.minimapfrag.shown();
@@ -125,8 +126,8 @@ public class TerrainPainterFragment{
                                 }
 
                                 table.update(() -> {
-                                    Vec2 v = button.localToStageCoordinates(Tmp.v1.setZero());
-                                    table.setPosition(v.x, v.y, Align.topLeft);
+                                    Vec2 v = button.localToStageCoordinates(Tmp.v1.setZero()).add(0, button.getHeight());
+                                    table.setPosition(v.x, v.y, Align.bottomLeft);
                                     if(!shown()){
                                         table.remove();
                                         lastTable[0] = null;
@@ -209,6 +210,86 @@ public class TerrainPainterFragment{
                 all.stack(slider, label).width(sliderWidth).padTop(4f);
                 all.row();
 
+                boolean[] lastDataPainting = {paintbrush.dataTool()};
+                all.collapser(d -> {
+                    ImageButton lockData = d.button(painter.lockData ? Icon.lock : Icon.lockOpen, () -> {}).get();
+                    lockData.changed(() -> painter.lockData = !painter.lockData);
+                    lockData.getStyle().imageChecked = Icon.lock;
+                    lockData.setChecked(painter.lockData);
+                    dataField = d.field("", s -> painter.dataData = (byte)Strings.parseInt(s, 0)).growX().colspan(2).get();
+                    dataField.setMessageText("$tu-painter.data");
+                    dataField.setValidator(s -> s.isEmpty() || Strings.canParseInt(s));
+                    BLElements.flatTooltip(dataField, "$tu-painter.data.description");
+                    d.row();
+
+                    ImageButton lockFloor = d.button(painter.lockFloor ? Icon.lock : Icon.lockOpen, () -> {}).get();
+                    lockFloor.changed(() -> painter.lockFloor = !painter.lockFloor);
+                    lockFloor.getStyle().imageChecked = Icon.lock;
+                    lockFloor.setChecked(painter.lockFloor);
+                    floorField = d.field("", s -> painter.floorData = (byte)Strings.parseInt(s, 0)).growX().colspan(2).get();
+                    floorField.setMessageText("$tu-painter.floordata");
+                    floorField.setValidator(s -> s.isEmpty() || Strings.canParseInt(s));
+                    BLElements.flatTooltip(floorField, "$tu-painter.floordata.description");
+                    d.row();
+
+                    ImageButton lockOverlay = d.button(painter.lockOverlay ? Icon.lock : Icon.lockOpen, () -> {}).get();
+                    lockOverlay.changed(() -> painter.lockOverlay = !painter.lockOverlay);
+                    lockOverlay.getStyle().imageChecked = Icon.lock;
+                    lockOverlay.setChecked(painter.lockOverlay);
+                    overlayField = d.field("", s -> painter.overlayData = (byte)Strings.parseInt(s, 0)).growX().colspan(2).get();
+                    overlayField.setMessageText("$tu-painter.overlaydata");
+                    overlayField.setValidator(s -> s.isEmpty() || Strings.canParseInt(s));
+                    BLElements.flatTooltip(overlayField, "$tu-painter.overlaydata.description");
+                    d.row();
+
+                    ImageButton lockExtra = d.button(painter.lockExtra ? Icon.lock : Icon.lockOpen, () -> {}).get();
+                    lockExtra.changed(() -> painter.lockExtra = !painter.lockExtra);
+                    lockExtra.getStyle().imageChecked = Icon.lock;
+                    lockExtra.setChecked(painter.lockExtra);
+                    extraField = d.field("", s -> painter.extraData = Strings.parseInt(s, 0)).growX().get();
+                    extraField.setMessageText("$tu-painter.extradata");
+                    extraField.setValidator(s -> s.isEmpty() || Strings.canParseInt(s));
+                    BLElements.flatTooltip(extraField, "$tu-painter.extradata.description");
+                    d.button(c -> {
+                        c.margin(4f);
+                        c.left();
+                        c.table(Tex.pane, in -> {
+                            in.image(Tex.whiteui).update(i -> i.color.set(painter.extraData | 0xff)).grow();
+                        }).margin(4).size(50f).padRight(10);
+                    }, Styles.cleart, () -> {
+                        ui.picker.show(
+                            new Color(painter.extraData | 0xff), false,
+                            col -> {
+                                painter.extraData = col.rgba8888();
+                                extraField.setText(String.valueOf(painter.extraData));
+                            }
+                        );
+                    }).right();
+
+                    updateFields();
+                }, () -> paintbrush.dataTool()).growX().with(c -> c.setEnforceMinSize(true)).update(col -> {
+                    boolean setting = paintbrush.dataTool();
+                    if(lastDataPainting[0] != setting){
+                        col.invalidateHierarchy();
+                        lastDataPainting[0] = setting;
+                    }
+                });
+                all.row();
+
+                Table[] configTable = {null};
+                Block[] lastBlock = {null};
+                all.collapser(c -> configTable[0] = c, () -> painter.drawBlock.editorConfigurable && !paintbrush.dataTool()).with(c -> c.setEnforceMinSize(true)).update(col -> {
+                    if(lastBlock[0] != painter.drawBlock){
+                        configTable[0].clear();
+                        if(painter.drawBlock != null){
+                            painter.drawBlock.buildEditorConfig(configTable[0]);
+                            col.invalidateHierarchy();
+                        }
+                        lastBlock[0] = painter.drawBlock;
+                    }
+                });
+                all.row();
+
                 HoldImageButton cButton = new HoldImageButton(TUIcons.get(Icon.terrain));
                 cButton.clicked(() -> painter.flushCliffs(indentCliff));
                 cButton.held(() -> indentCliff = !indentCliff);
@@ -283,6 +364,13 @@ public class TerrainPainterFragment{
 
     public boolean shown(){
         return show;
+    }
+
+    public void updateFields(){
+        dataField.setText(painter.dataData != 0 ? String.valueOf(painter.dataData) : "");
+        floorField.setText(painter.floorData != 0 ? String.valueOf(painter.floorData) : "");
+        overlayField.setText(painter.overlayData != 0 ? String.valueOf(painter.overlayData) : "");
+        extraField.setText(painter.extraData != 0 ? String.valueOf(painter.extraData) : "");
     }
 
     private void rebuild(){

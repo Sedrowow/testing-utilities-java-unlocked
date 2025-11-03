@@ -14,12 +14,19 @@ import static testing.util.TUVars.*;
 
 /** Mimics {@link EditorTool} */
 public enum PainterTool{
-    pick(){
+    pick(true, "pickdata"){
         public void touched(int x, int y){
             if(!Structs.inBounds(x, y, painter.width(), painter.height())) return;
 
             Tile tile = painter.tile(x, y);
-            painter.setDrawBlock(tile.block() == Blocks.air || !tile.block().inEditor ? tile.overlay() == Blocks.air ? tile.floor() : tile.overlay() : tile.block());
+            switch(mode){
+                case -1 -> { //Normal; Pick Block
+                    painter.setDrawBlock(tile.block() == Blocks.air || !tile.block().inEditor ? tile.overlay() == Blocks.air ? tile.floor() : tile.overlay() : tile.block());
+                }
+                case 0 -> { //Pick Data
+                    painter.setData(tile.data, tile.floorData, tile.overlayData, tile.extraData);
+                }
+            }
         }
     },
     line("replace", "orthogonal"){
@@ -46,8 +53,7 @@ public enum PainterTool{
             });
         }
     },
-    //the "under liquid" rendering is too buggy to make public
-    pencil("replace", "square", "drawteams"/*, "underliquid"*/){
+    pencil(true, "replace", "square", "drawteams", "drawdata"){
         {
             edit = true;
             draggable = true;
@@ -55,22 +61,23 @@ public enum PainterTool{
 
         @Override
         public void touched(int x, int y){
-            if(mode == -1){
-                //normal mode
-                painter.drawBlocks(x, y);
-            }else if(mode == 0){
-                //replace mode
-                painter.drawBlocksReplace(x, y);
-            }else if(mode == 1){
-                //square mode
-                painter.drawBlocks(x, y, true, false, data -> true);
-            }else if(mode == 2){
-                //draw teams
-                painter.drawCircle(x, y, painter.brushSize, data -> data.setTeam(painter.drawTeam));
-            }else if(mode == 3){
-                painter.drawBlocks(x, y, false, true, data -> data.floor().isLiquid);
+            switch(mode){
+                case -1 -> { //normal mode
+                    painter.drawBlocks(x, y);
+                }
+                case 0 -> { //replace mode
+                    painter.drawBlocksReplace(x, y);
+                }
+                case 1 -> { //square mode
+                    painter.drawBlocks(x, y, true, false, data -> true);
+                }
+                case 2 -> { //draw teams
+                    painter.drawCircle(x, y, painter.brushSize, data -> data.setTeam(painter.drawTeam));
+                }
+                case 3 -> { //draw data
+                    painter.drawData(x, y);
+                }
             }
-
         }
     },
     eraser("eraseores"){
@@ -268,12 +275,19 @@ public enum PainterTool{
     public boolean edit;
     /** Whether this tool should be dragged across the canvas when the mouse moves.*/
     public boolean draggable;
+    /** Whether the last alt tool is related to data painting. */
+    public final boolean data;
     PainterTool(){
         this(new String[]{});
     }
 
-    PainterTool(String... altModes){
+    PainterTool(boolean data, String... altModes){
+        this.data = data;
         this.altModes = altModes;
+    }
+
+    PainterTool(String... altModes){
+        this(false, altModes);
     }
 
     public void touched(int x, int y){}
