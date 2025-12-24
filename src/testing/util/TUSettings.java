@@ -18,8 +18,8 @@ import static testing.ui.TUDialogs.*;
 
 public class TUSettings{
     public static void init(){
-        ui.settings.addCategory(bundle.get("setting.tu-title"), "test-utils-settings-icon", t -> {
-            t.pref(new Banner("test-utils-settings-banner", -1));
+        ui.settings.addCategory(bundle.get("setting.tu-title"), "test-utils-u-settings-icon", t -> {
+            t.pref(new Banner("test-utils-u-settings-banner", -1));
             t.checkPref("tu-instakill", true);
             t.checkPref("tu-death-effect", true);
             t.checkPref("tu-despawns", true);
