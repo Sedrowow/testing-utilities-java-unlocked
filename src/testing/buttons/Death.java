@@ -2,6 +2,7 @@ package testing.buttons;
 
 import arc.graphics.*;
 import arc.graphics.g2d.*;
+import arc.math.*;
 import arc.scene.style.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
@@ -37,9 +38,9 @@ public class Death{
 
         Unit u = player.unit();
         if(u != null){
-            Sounds.spark.at(u);
-            for(int i = 0; i < Math.max(1f, u.hitSize / 4f); i++){
-                TUFx.deathLightning.at(u, true);
+            Sounds.shootArc.at(u);
+            for(int i = 0; i < Math.max(1f, Mathf.sqrt(u.hitSize / 2f)); i++){
+                TUFx.deathLightning.at(u.x, u.y, u.hitSize);
             }
         }
     }
