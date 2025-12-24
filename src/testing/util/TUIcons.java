@@ -34,7 +34,7 @@ public class TUIcons{
     }
 
     static TextureRegionDrawable get(String name){
-        return new TextureRegionDrawable(Core.atlas.find("test-utils-" + name));
+        return new TextureRegionDrawable(Core.atlas.find("test-utils-u-" + name));
     }
 
     public static TextureRegionDrawable get(TextureRegionDrawable icon){
