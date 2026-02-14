@@ -1,7 +1,9 @@
 package testing.util;
 
+import arc.func.*;
 import arc.scene.style.*;
 import arc.scene.ui.*;
+import arc.scene.ui.TextField.*;
 import arc.scene.ui.layout.*;
 import arc.scene.utils.*;
 import arc.util.*;
@@ -20,6 +22,11 @@ public class TUSettings{
     public static void init(){
         ui.settings.addCategory(bundle.get("setting.tu-title"), "test-utils-u-settings-icon", t -> {
             t.pref(new Banner("test-utils-u-settings-banner", -1));
+            t.checkPref("tu-vertical", mobile);
+            t.pref(new FloatTextSetting("tu-offset-x", Setup::setOffsetX));
+            t.pref(new FloatTextSetting("tu-offset-y", Setup::setOffsetY));
+            t.pref(new Separator(8));
+            t.checkPref("tu-load-vanilla", true);
             t.checkPref("tu-instakill", true);
             t.checkPref("tu-death-effect", true);
             t.checkPref("tu-despawns", true);
@@ -37,7 +44,7 @@ public class TUSettings{
             t.checkPref("tu-music-enabled", false);
             t.checkPref("tu-allow-filters", false);
 
-            if(!mobile){
+            if(!mobile || settings.getBool("tu-mobile-test", false)){
                 t.pref(new Separator(8));
                 t.checkPref("tu-mobile-test", false);
             }
@@ -116,7 +123,11 @@ public class TUSettings{
 
         @Override
         public void add(SettingsTable table){
-            ImageButton b = table.button(TUIcons.get(Icon.defense), BLVars.iconSize, () -> teamDialog.show(getTeam(), team -> settings.put("tu-default-team", team.id))).left().padTop(3f).get();
+            ImageButton b = table.button(
+                TUIcons.get(Icon.defense), BLVars.iconSize,
+                () -> teamDialog.show(getTeam(),
+                team -> settings.put("tu-default-team", team.id))
+            ).left().padTop(3f).get();
             b.label(() -> bundle.format("setting." + name + ".name", "[#" + getTeam().color + "]" + teamDialog.teamName(getTeam()) + "[]")).padLeft(6).growX();
             table.row();
 
@@ -125,6 +136,41 @@ public class TUSettings{
 
         public Team getTeam(){
             return Team.get(settings.getInt("tu-default-team", Team.sharded.id));
+        }
+    }
+
+    /** TextSetting but with the title moved to before the field and restricted to floats */
+    public static class FloatTextSetting extends Setting{
+        Cons<Float> changed;
+
+        public FloatTextSetting(String name, Cons<Float> changed){
+            super(name);
+            this.changed = changed;
+        }
+
+        @Override
+        public void add(SettingsTable table){
+            TextField field = new TextField();
+            field.setFilter(TextFieldFilter.floatsOnly);
+            field.setValidator(Strings::canParseFloat);
+
+            field.update(() -> field.setText(String.valueOf(settings.getFloat(name))));
+
+            field.changed(() -> {
+                if(field.isValid()){
+                    float val = Strings.parseFloat(field.getText());
+                    settings.put(name, val);
+                    if(changed != null){
+                        changed.get(val);
+                    }
+                }
+            });
+
+            Table prefTable = table.table().left().padTop(3f).get();
+            prefTable.label(() -> title);
+            prefTable.add(field);
+            addDesc(prefTable);
+            table.row();
         }
     }
 }

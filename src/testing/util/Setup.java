@@ -9,6 +9,7 @@ import mindustry.*;
 import mindustry.core.*;
 import mindustry.game.EventType.*;
 import mindustry.gen.*;
+import mindustry.maps.*;
 import mindustry.mod.Mods.*;
 import mindustry.world.*;
 import testing.*;
@@ -24,33 +25,19 @@ public class Setup{
     public static TerrainPainterFragment terrainFrag;
     private static Table timeSlider;
     private static boolean tcOutdated = false;
+    private static float startX = Float.MIN_VALUE, startY = Float.MIN_VALUE;
 
     public static void init(){
         TUDialogs.load();
 
         BLSetup.addTable(table -> {
-            if(mobile && settings.getBool("console")){
-                table.table(Tex.buttonEdge3, Console::addButtons);
-                table.row();
+            if(settings.getBool("tu-vertical", mobile)){
+                vertTables(table);
+            }else{
+                horiTables(table);
             }
-            table.table(Tex.buttonEdge3, t -> {
-                Spawn.addButtons(t);
-                Environment.worldButton(t);
-                Effect.statusButton(t);
-                Sandbox.addButtons(t);
-            });
-            table.row();
 
-            boolean timeControl = timeControlEnabled();
-
-            table.table(timeControl ? Tex.buttonEdge3 : Tex.pane, t -> {
-                TeamChanger.addButton(t);
-                Health.addButtons(t);
-                Death.addButtons(t);
-                LightSwitch.lightButton(t);
-            });
-
-            if(timeControl){
+            if(timeControlEnabled()){
                 table.row();
                 table.add(yoinkTimeSlider());
             }
@@ -110,13 +97,71 @@ public class Setup{
         miniPos.getCell(pos).top().right();
 
         terrainFrag = new TerrainPainterFragment();
-        Core.app.post(() -> terrainFrag.build(ui.hudGroup)); //Wait for BLUI to set up.
+        Core.app.post(() -> { //Wait for BLUI to set up.
+            terrainFrag.build(ui.hudGroup);
+            setOffsetX(settings.getFloat("tu-offset-x"));
+            setOffsetY(settings.getFloat("tu-offset-y"));
+        });
+
+        //Add campaign maps to custom maps list
+        if(settings.getBool("setting.tu-load-vanilla", true)){
+            Events.on(ClientLoadEvent.class, e -> {
+                content.sectors().each(sector -> {
+                    //Filter out campaign saves
+                    if(!tree.get("maps/" + sector.generator.map.file.name()).exists()) return;
+
+                    Map map = sector.generator.map;
+                    Reflect.set(map, "custom", false);
+                    maps.all().add(map);
+                    maps.queueNewPreview(map);
+                });
+                maps.all().sort();
+                Reflect.invoke(maps, "createAllPreviews");
+            });
+        }
 
         Events.on(WorldLoadEvent.class, e -> {
             if(posLabelAligned) return;
             pos.setAlignment(Align.right, Align.right);
             posLabelAligned = true;
         });
+    }
+
+    private static void horiTables(Table table){
+        if(mobile && settings.getBool("console")){
+            table.table(Tex.buttonEdge3, Console::addButtons).row();
+        }
+        table.table(Tex.buttonEdge3, t -> {
+            Spawn.addButtons(t);
+            Environment.worldButton(t);
+            Effect.statusButton(t);
+            Sandbox.addButtons(t);
+        }).row();
+
+        table.table(timeControlEnabled() ? Tex.buttonEdge3 : Tex.pane, t -> {
+            TeamChanger.addButton(t);
+            Health.addButtons(t);
+            Death.addButtons(t);
+            LightSwitch.lightButton(t);
+        });
+    }
+
+    private static void vertTables(Table table){
+        table.table(Tex.buttonEdge3, Spawn::addButtons).row();
+        table.table(Tex.pane, t -> {
+            Environment.worldButton(t);
+            LightSwitch.lightButton(t);
+        }).row();
+        table.table(Tex.buttonEdge3, Sandbox::addButtons).row();
+        table.table(TUStyles.buttonRight, t -> {
+            Health.addButtons(t);
+            Effect.statusButton(t);
+        }).row();
+        table.table(Tex.buttonEdge3, Death::addButtons).row();
+        table.table(Tex.buttonEdge3, TeamChanger::addButton).row();
+        if(mobile && settings.getBool("console")){
+            table.table(timeControlEnabled() ? Tex.buttonEdge3 : Tex.pane, Console::addButtons);
+        }
     }
 
     private static Table yoinkTimeSlider(){
@@ -141,6 +186,26 @@ public class Setup{
     public static boolean timeControlEnabled(){
         LoadedMod timeControl = Vars.mods.getMod("time-control");
         return !tcOutdated && timeControl != null && timeControl.isSupported() && timeControl.enabled();
+    }
+
+    private static float startX(){
+        if(startX == Float.MIN_VALUE) startX = ui.hudGroup.find("blui").x;
+        return startX;
+    }
+
+    private static float startY(){
+        if(startY == Float.MIN_VALUE) startY = ui.hudGroup.find("blui").y;
+        return startY;
+    }
+
+    public static void setOffsetX(float x){
+        Table blui = ui.hudGroup.find("blui");
+        blui.x = startX() + x;
+    }
+
+    public static void setOffsetY(float y){
+        Table blui = ui.hudGroup.find("blui");
+        blui.y = startY() + y;
     }
 
     private static String fix(float f){

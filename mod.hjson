@@ -19,7 +19,7 @@ description: "Utilities for testing stuff in sandbox and career. (Load the game 
 #short description displayed under the title
 subtitle: "Easier to use than the console and more cheaty."
 
-version: 69.5
+version: 69.8
 
 #the minimum game build required to run this mod
 minGameVersion: 154
