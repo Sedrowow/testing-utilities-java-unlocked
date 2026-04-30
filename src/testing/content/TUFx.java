@@ -10,7 +10,6 @@ import mindustry.graphics.*;
 import mindustry.type.*;
 
 import static arc.graphics.g2d.Draw.*;
-import static arc.graphics.g2d.Draw.rect;
 import static arc.graphics.g2d.Lines.*;
 
 public class TUFx{
